@@ -16,6 +16,11 @@ struct ResultsView: View {
         totalResolved > 0 ? Double(engine.loadedCount) / Double(totalResolved) : 0
     }
 
+    /// `engine.truckNumber` is whichever truck was in progress when the run ended, which never
+    /// itself finished (a truck that fills up moves the engine straight to the next one without
+    /// ever reaching `.over`) — so completed trucks are always one less.
+    private var trucksLoaded: Int { max(0, engine.truckNumber - 1) }
+
     private var packagesPerHour: Double {
         guard let start = engine.shiftStartedAt, let end = engine.shiftEndedAt else { return 0 }
         let hours = start.duration(to: end).seconds / 3600
@@ -28,18 +33,20 @@ struct ResultsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                Text("SHIFT COMPLETE")
+                Text(engine.isPracticeMode ? "PRACTICE COMPLETE" : "SHIFT COMPLETE")
                     .font(.system(size: 32, weight: .black, design: .rounded))
 
-                Text(ScoreRules.rank(forScore: engine.score))
-                    .font(.title3.bold())
-                    .foregroundStyle(.yellow)
+                if !engine.isPracticeMode {
+                    Text(ScoreRules.rank(forScore: engine.score))
+                        .font(.title3.bold())
+                        .foregroundStyle(.yellow)
+                }
 
                 statGrid
                     .frame(maxWidth: 420)
 
                 Button {
-                    engine.startShift()
+                    engine.startShift(practiceMode: engine.isPracticeMode)
                 } label: {
                     Text("Run It Again")
                         .font(.title3.bold())
@@ -48,6 +55,17 @@ struct ResultsView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
+
+                Button {
+                    engine.returnToMenu()
+                } label: {
+                    Text("Main Menu")
+                        .font(.subheadline.bold())
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .tint(.white)
             }
             .padding()
             .frame(maxWidth: .infinity)
@@ -57,14 +75,20 @@ struct ResultsView: View {
         .background(Color.black)
         .ignoresSafeArea()
         .onAppear {
-            bestScore = max(bestScore, engine.score)
+            // Practice runs have no stakes by design — they shouldn't bump the saved best.
+            if !engine.isPracticeMode {
+                bestScore = max(bestScore, engine.score)
+            }
         }
     }
 
     private var statGrid: some View {
         VStack(spacing: 10) {
             statRow("Score", "\(engine.score)")
-            statRow("Best Score", "\(max(bestScore, engine.score))")
+            if !engine.isPracticeMode {
+                statRow("Best Score", "\(max(bestScore, engine.score))")
+            }
+            statRow("Trucks Loaded", "\(trucksLoaded)")
             statRow("Packages / Hour", String(format: "%.0f", packagesPerHour))
             Divider().background(Color.white.opacity(0.2))
             statRow("Loaded", "\(engine.loadedCount)")

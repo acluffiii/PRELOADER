@@ -1,65 +1,80 @@
 import Foundation
 
-/// Builds packages with a weighted mix of shelf-bound, floor-bound, and "do not touch" boxes.
-/// Takes an injectable RNG so tests can get deterministic belts.
+/// Builds packages with a weighted mix of shelf-bound, rerun-bound, air, and "do not touch"
+/// boxes. Takes an injectable RNG so tests can get deterministic belts.
 nonisolated struct PackageFactory {
-    /// Serials that deliberately look like they could belong to a shelf but don't — letter
-    /// look-alikes, numbers just outside a range, and mixed alphanumerics.
-    private static let doNotTouchSerials = [
-        "1O42", "5012", "2150", "1Z9-44A", "3150", "40A9", "9999",
-        "1250", "2999", "ABC123", "3O87", "4150", "1999", "2O50",
-    ]
-
     private var rng: AnyRandomNumberGenerator
 
     init(rng: RandomNumberGenerator = SystemRandomNumberGenerator()) {
         self.rng = AnyRandomNumberGenerator(rng)
     }
 
-    /// Produces the next package to spawn on the belt.
-    mutating func makePackage(now: ContinuousClock.Instant) -> Package {
+    /// Produces the next package to spawn on the belt, against `ranges` — the current truck's
+    /// shelf ranges, since what counts as "shelf-bound" vs. "do not touch" rotates every truck.
+    mutating func makePackage(now: ContinuousClock.Instant, ranges: [LoadZone: ClosedRange<Int>]) -> Package {
         let roll = Double.random(in: 0..<1, using: &rng)
         let size = PackageSize.allCases.randomElement(using: &rng) ?? .medium
 
         switch roll {
-        case 0..<0.70:
-            return makeShelfPackage(now: now)
-        case 0.70..<0.82:
-            return makeFloorPackage(now: now, size: size)
+        case 0..<0.72:
+            return makeShelfPackage(now: now, ranges: ranges)
+        case 0.72..<0.82:
+            return makeRerunPackage(now: now, size: size, ranges: ranges)
+        case 0.82..<0.90:
+            return makeAirPackage(now: now, ranges: ranges)
         default:
-            return makeDoNotTouchPackage(now: now, size: size)
+            return makeDoNotTouchPackage(now: now, size: size, ranges: ranges)
         }
     }
 
-    private mutating func makeShelfPackage(now: ContinuousClock.Instant) -> Package {
-        let entry = SerialRules.shelfRanges.randomElement(using: &rng)!
-        let serial = String(Int.random(in: entry.range, using: &rng))
+    private mutating func makeShelfPackage(now: ContinuousClock.Instant, ranges: [LoadZone: ClosedRange<Int>]) -> Package {
+        let range = ranges.values.randomElement(using: &rng) ?? SerialRules.defaultRanges.values.first!
+        let serial = String(Int.random(in: range, using: &rng))
         let size: PackageSize = [.small, .medium, .large].randomElement(using: &rng) ?? .medium
-        return makePackage(serial: serial, size: size, now: now)
+        return makePackage(serial: serial, size: size, now: now, ranges: ranges)
     }
 
-    private mutating func makeFloorPackage(now: ContinuousClock.Instant, size: PackageSize) -> Package {
-        // Floor packages are either plainly oversize, or regular-sized with no label.
-        let isOversize = Bool.random(using: &rng)
-        let resolvedSize: PackageSize = isOversize ? .oversize : size
-        let serial: String? = isOversize ? String(Int.random(in: 1000...4099, using: &rng)) : nil
-        return makePackage(serial: serial, size: resolvedSize, now: now)
+    /// A no-label package, bound for rerun.
+    private mutating func makeRerunPackage(
+        now: ContinuousClock.Instant,
+        size: PackageSize,
+        ranges: [LoadZone: ClosedRange<Int>]
+    ) -> Package {
+        return makePackage(serial: nil, size: size, now: now, ranges: ranges)
     }
 
-    private mutating func makeDoNotTouchPackage(now: ContinuousClock.Instant, size: PackageSize) -> Package {
-        let serial = Self.doNotTouchSerials.randomElement(using: &rng)!
-        let resolvedSize = size == .oversize ? .large : size
-        return makePackage(serial: serial, size: resolvedSize, now: now)
+    /// A special air package: no serial, an airplane icon instead, always bound for the roof.
+    /// Always small or medium, and this is the one bucket that doesn't reuse the shared size roll
+    /// from `makePackage(now:ranges:)`.
+    private mutating func makeAirPackage(now: ContinuousClock.Instant, ranges: [LoadZone: ClosedRange<Int>]) -> Package {
+        let size: PackageSize = [.small, .medium].randomElement(using: &rng) ?? .small
+        return makePackage(serial: nil, size: size, isAirPackage: true, now: now, ranges: ranges)
+    }
+
+    private mutating func makeDoNotTouchPackage(
+        now: ContinuousClock.Instant,
+        size: PackageSize,
+        ranges: [LoadZone: ClosedRange<Int>]
+    ) -> Package {
+        let serial = DoNotTouchSerialGenerator.makeSerial(ranges: ranges, using: &rng)
+        return makePackage(serial: serial, size: size, now: now, ranges: ranges)
     }
 
     /// Builds a package and derives its `correctZone` from `SerialRules`, the single source of
     /// truth, instead of letting each call site assert its own answer.
-    private func makePackage(serial: String?, size: PackageSize, now: ContinuousClock.Instant) -> Package {
+    private func makePackage(
+        serial: String?,
+        size: PackageSize,
+        isAirPackage: Bool = false,
+        now: ContinuousClock.Instant,
+        ranges: [LoadZone: ClosedRange<Int>]
+    ) -> Package {
         Package(
             id: UUID(),
             serial: serial,
             size: size,
-            correctZone: SerialRules.zone(for: serial, size: size),
+            correctZone: SerialRules.zone(for: serial, size: size, isAirPackage: isAirPackage, ranges: ranges),
+            isAirPackage: isAirPackage,
             beltProgress: 0,
             spawnedAt: now
         )

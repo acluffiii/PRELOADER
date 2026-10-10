@@ -5,7 +5,6 @@ nonisolated enum PackageSize: CaseIterable, Equatable, Sendable {
     case small
     case medium
     case large
-    case oversize
 
     /// The box's footprint on the belt, in points, at the game's reference scale.
     var footprint: CGSize {
@@ -13,7 +12,6 @@ nonisolated enum PackageSize: CaseIterable, Equatable, Sendable {
         case .small: return CGSize(width: 46, height: 38)
         case .medium: return CGSize(width: 62, height: 50)
         case .large: return CGSize(width: 80, height: 64)
-        case .oversize: return CGSize(width: 108, height: 84)
         }
     }
 }
@@ -25,6 +23,9 @@ nonisolated enum PackageState: Equatable, Sendable {
     case loaded(LoadZone)
     case rejected
     case ranOff
+    /// Flying to its shelf as part of a Helper-button sweep — frozen in place (not advancing,
+    /// not run-off-able) until the view's flight animation finishes and resolves it.
+    case autoSorting
 }
 
 /// A single package riding the belt.
@@ -35,6 +36,16 @@ nonisolated struct Package: Identifiable, Sendable {
     let size: PackageSize
     /// The zone this package should be loaded into, or nil if it's a "do not touch" package.
     let correctZone: LoadZone?
+    /// True for a special air package — shows an airplane icon instead of a serial, and always
+    /// belongs on the roof. Never actually mutates after creation, but needs `var` (matching
+    /// `state`/`beltProgress` below) so the synthesized memberwise init exposes it as an
+    /// overridable parameter — a `let` with a default is excluded from that init entirely, which
+    /// would force every existing call site to start passing it.
+    var isAirPackage: Bool = false
+
+    /// True for a power-up box: tapping it fires a random `PowerUpEffect` instead of being
+    /// picked up and carried to a shelf. Never has a `correctZone`.
+    var isPowerUp: Bool = false
 
     /// Position along the belt, in the belt's own coordinate space (0 = spawn point).
     var beltProgress: Double
@@ -49,10 +60,11 @@ nonisolated struct Package: Identifiable, Sendable {
     /// attempt on the same box in the same shift can't charge another.
     var wasTouched: Bool = false
 
-    /// True for packages the player must leave alone.
-    var isDoNotTouch: Bool { correctZone == nil }
+    /// True for packages the player must leave alone. A power-up box also has no
+    /// `correctZone`, but isn't a "do not touch" box — tapping it is exactly how it's used.
+    var isDoNotTouch: Bool { correctZone == nil && !isPowerUp }
 
     var labelText: String {
-        serial ?? "NO LABEL"
+        isAirPackage ? "AIR" : (serial ?? "NO LABEL")
     }
 }
