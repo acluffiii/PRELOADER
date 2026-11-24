@@ -72,7 +72,11 @@ struct TruckInteriorView: View {
     }
 
     private var ceilingGradient: LinearGradient {
-        LinearGradient(colors: [Color(white: 0.30), Color(white: 0.20)], startPoint: .bottom, endPoint: .top)
+        LinearGradient(
+            colors: [Color(red: 0.22, green: 0.28, blue: 0.34), Color(red: 0.11, green: 0.15, blue: 0.19)],
+            startPoint: .bottom,
+            endPoint: .top
+        )
     }
 
     // MARK: Zones (shelves, rerun, and roof)
@@ -96,6 +100,8 @@ struct TruckInteriorView: View {
             switch zone {
             case .rerun:
                 slats(in: path)
+                // Dock safety paint along the tray's near edge, under the belt.
+                rerunLip.mask(path)
             case .shelf1000, .shelf2000, .shelf3000, .shelf4000, .roof:
                 // A bright metal lip along the near-facing edge, with a rivet row.
                 shelfLipGradient.mask(path)
@@ -115,9 +121,9 @@ struct TruckInteriorView: View {
                     .scaleEffect(layout.stackScale(in: zone, index: index))
                     .position(layout.stackPosition(in: zone, index: index))
                     .allowsHitTesting(false)
-                    .transition(.scale(scale: 1.4).combined(with: .opacity))
+                    .transition(.modifier(active: LandingSquash(amount: 1), identity: LandingSquash(amount: 0)))
             }
-            .animation(.bouncy(duration: 0.3), value: loadedPackages[zone]?.count)
+            .animation(.bouncy(duration: 0.32), value: loadedPackages[zone]?.count)
         }
         .contentShape(path)
         .onTapGesture { onZoneTap(zone) }
@@ -239,31 +245,67 @@ struct TruckInteriorView: View {
     }
 
     /// The upper shelves (1000/3000) sit closer to the ceiling light, so they read a touch
-    /// brighter than the lower pair.
+    /// brighter than the lower pair. Cool steel, so the white range stencils keep their contrast.
     private func shelfGradient(for zone: LoadZone) -> LinearGradient {
         let isUpper = zone == .shelf1000 || zone == .shelf3000
-        let top = Color(white: isUpper ? 0.32 : 0.25)
-        let bottom = Color(white: isUpper ? 0.21 : 0.15)
+        let top = Color(red: isUpper ? 0.24 : 0.18, green: isUpper ? 0.31 : 0.24, blue: isUpper ? 0.37 : 0.29)
+        let bottom = Color(red: isUpper ? 0.13 : 0.10, green: isUpper ? 0.17 : 0.13, blue: isUpper ? 0.22 : 0.17)
         return LinearGradient(colors: [top, bottom], startPoint: .top, endPoint: .bottom)
     }
 
-    /// A cool blue-gray, distinct from the warm metal shelves — a small hatch in the back wall
-    /// for air packages.
+    /// A sky-blue hatch in the back wall for air packages — darker than the dock sky outside
+    /// so the white airplane stencil still reads.
     private var roofGradient: LinearGradient {
-        LinearGradient(colors: [Color(red: 0.30, green: 0.40, blue: 0.52), Color(red: 0.18, green: 0.25, blue: 0.34)], startPoint: .top, endPoint: .bottom)
-    }
-
-    private var floorGradient: LinearGradient {
         LinearGradient(
-            colors: [Color(red: 0.40, green: 0.29, blue: 0.18), Color(red: 0.25, green: 0.18, blue: 0.11)],
+            colors: [Color(red: 0.20, green: 0.42, blue: 0.58), Color(red: 0.11, green: 0.24, blue: 0.36)],
             startPoint: .top,
             endPoint: .bottom
         )
     }
 
-    /// A dull galvanized-bin look for the rerun tray, distinct from both the wood-toned floor and
-    /// the warmer shelf metal.
+    private var floorGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 0.46, green: 0.32, blue: 0.18), Color(red: 0.28, green: 0.18, blue: 0.10)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    /// Concrete dock tray, distinct from the wood floor and the steel shelves.
     private var rerunGradient: LinearGradient {
-        LinearGradient(colors: [Color(white: 0.38), Color(white: 0.24)], startPoint: .top, endPoint: .bottom)
+        LinearGradient(
+            colors: [Color(red: 0.34, green: 0.40, blue: 0.46), Color(red: 0.20, green: 0.24, blue: 0.28)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    /// Orange safety stripe along the top of the rerun tray. Masked to the zone, so it doesn't
+    /// change the tap shape.
+    private var rerunLip: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: ArtPalette.orange, location: 0),
+                .init(color: ArtPalette.orange.opacity(0.2), location: 0.07),
+                .init(color: .clear, location: 0.14),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+}
+
+/// Insertion pose for a box that just landed on a shelf: wide and short, then it springs back.
+/// Removal plays the same squash. Decorative — stack position and scale are unchanged.
+private struct LandingSquash: ViewModifier, Animatable, Equatable {
+    var amount: CGFloat
+
+    var animatableData: CGFloat {
+        get { amount }
+        set { amount = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.scaleEffect(x: 1 + 0.16 * amount, y: 1 - 0.22 * amount, anchor: .bottom)
     }
 }
