@@ -68,7 +68,9 @@ struct ShiftView: View {
                         package: package,
                         position: position(for: package, layout: layout),
                         engine: engine,
-                        selectedPackageID: $selectedPackageID
+                        selectedPackageID: $selectedPackageID,
+                        isAirborne: flight?.packageID == package.id || helperFlights[package.id] != nil,
+                        airborneDuration: helperFlights[package.id] != nil ? 0.4 : 0.3
                     )
                     .allowsHitTesting(flight?.packageID != package.id && helperFlights[package.id] == nil)
                 }

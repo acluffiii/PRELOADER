@@ -36,10 +36,9 @@ struct ConveyorBeltView: View {
         let rect = layout.beltRect
         let dock = layout.dockFloorRect
         return Ellipse()
-            .fill(Color.black.opacity(0.35))
-            .frame(width: rect.width * 0.7, height: dock.height * 0.4)
-            .blur(radius: 6)
-            .position(x: rect.midX, y: dock.minY + dock.height * 0.3)
+            .fill(Color.black.opacity(0.28))
+            .frame(width: rect.width * 0.72, height: dock.height * 0.28)
+            .position(x: rect.midX, y: dock.minY + dock.height * 0.28)
     }
 
     /// A few steel posts planting the belt onto the dock floor.
@@ -63,7 +62,7 @@ struct ConveyorBeltView: View {
     }
 
     private var legGradient: LinearGradient {
-        LinearGradient(colors: [Color(white: 0.5), Color(white: 0.25)], startPoint: .leading, endPoint: .trailing)
+        LinearGradient(colors: [ArtPalette.steelLight, ArtPalette.steel], startPoint: .leading, endPoint: .trailing)
     }
 
     // MARK: Belt body
@@ -84,13 +83,19 @@ struct ConveyorBeltView: View {
             let rollerY = size.height / 2
             var rollerX = rollerDiameter
             while rollerX < size.width {
-                let roller = Path(ellipseIn: CGRect(
+                let rollerRect = CGRect(
                     x: rollerX - rollerDiameter / 2,
                     y: rollerY - rollerDiameter / 2,
                     width: rollerDiameter,
                     height: rollerDiameter
-                ))
-                context.fill(roller, with: .color(.black.opacity(0.12)))
+                )
+                let roller = Path(ellipseIn: rollerRect)
+                context.drawLayer { layer in
+                    layer.clip(to: roller)
+                    layer.fill(roller, with: .color(ArtPalette.steelLight.opacity(0.7)))
+                    let lower = CGRect(x: rollerRect.minX, y: rollerRect.midY, width: rollerRect.width, height: rollerRect.height / 2)
+                    layer.fill(Path(lower), with: .color(.black.opacity(0.35)))
+                }
                 rollerX += rollerDiameter * 3
             }
         }
@@ -106,7 +111,7 @@ struct ConveyorBeltView: View {
             // A darker rail along the belt's underside, showing its thickness so it reads as a
             // solid object floating on its legs rather than a flat stripe painted on the floor.
             Rectangle()
-                .fill(Color(white: 0.08))
+                .fill(ArtPalette.steel)
                 .frame(height: 6)
                 .offset(y: 6)
         }
@@ -119,7 +124,6 @@ struct ConveyorBeltView: View {
                 Color.purple.opacity(0.2).allowsHitTesting(false)
             }
         }
-        .shadow(color: .black.opacity(0.4), radius: 8, y: 4)
         .task(id: isFevered) {
             if isFevered {
                 withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
@@ -132,7 +136,7 @@ struct ConveyorBeltView: View {
     }
 
     private var beltBaseColor: Color {
-        Color(red: 0.14, green: 0.14, blue: 0.16)
+        Color(red: 0.14, green: 0.18, blue: 0.22)
     }
 
     private var feverGradient: LinearGradient {

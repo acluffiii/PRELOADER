@@ -5,6 +5,9 @@ import SwiftUI
 /// out to the screen edges, and the bumper/wheels below. Drawn first, behind
 /// `TruckInteriorView`, so the interior reads as a deep opening cut into a real vehicle rather
 /// than a flat room filling the whole screen. Purely decorative: never hit-tests.
+///
+/// The body, doors, and bumper wear the poster's white panel and orange stripe. Opening, door,
+/// and bumper frames are the same rects as before — only the paint changed.
 struct TruckExteriorView: View {
     let layout: TruckLayout
 
@@ -27,21 +30,45 @@ struct TruckExteriorView: View {
 
     private var dockBackdrop: some View {
         ZStack(alignment: .bottom) {
-            LinearGradient(colors: [Color(white: 0.10), Color(white: 0.16)], startPoint: .top, endPoint: .bottom)
+            sky
                 .frame(width: layout.size.width, height: layout.size.height)
             dockFloor.frame(width: layout.size.width, height: layout.dockFloorRect.height)
         }
     }
 
+    /// Poster sky: a flat blue field, a pale disc, and a triangle. No blur — the grain lives
+    /// in the home-screen bitmap, and a noise fill here would be per-frame work for nothing.
+    private var sky: some View {
+        ZStack {
+            LinearGradient(
+                colors: [ArtPalette.skyTop, ArtPalette.sky, ArtPalette.skyDeep],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            Circle()
+                .fill(Color.white.opacity(0.16))
+                .frame(width: layout.size.width * 0.16, height: layout.size.width * 0.16)
+                .position(x: layout.size.width * 0.12, y: layout.size.height * 0.16)
+            Circle()
+                .fill(Color.white.opacity(0.08))
+                .frame(width: layout.size.width * 0.07, height: layout.size.width * 0.07)
+                .position(x: layout.size.width * 0.22, y: layout.size.height * 0.08)
+            SkyTriangle()
+                .fill(Color.white.opacity(0.14))
+                .frame(width: layout.size.height * 0.09, height: layout.size.height * 0.08)
+                .position(x: layout.size.width * 0.90, y: layout.size.height * 0.10)
+        }
+    }
+
     private var dockFloor: some View {
         Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: 0.22)))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.16, green: 0.20, blue: 0.24)))
             var y: CGFloat = 0
             while y < size.height {
                 var line = Path()
                 line.move(to: CGPoint(x: 0, y: y))
                 line.addLine(to: CGPoint(x: size.width, y: y))
-                context.stroke(line, with: .color(.black.opacity(0.15)), lineWidth: 1)
+                context.stroke(line, with: .color(.black.opacity(0.18)), lineWidth: 1)
                 y += 14
             }
         }
@@ -52,12 +79,15 @@ struct TruckExteriorView: View {
     /// The painted rear panel wrapping the doorway and the roof edge — the part of the van
     /// you'd see if the doors weren't there. Filled as a plain rect rather than punching a hole
     /// for the opening: `TruckInteriorView` draws on top of this in `ShiftView` and already
-    /// covers the opening completely, so there's nothing to subtract.
+    /// covers the opening completely, so there's nothing to subtract. The orange band therefore
+    /// shows on the two rear pillars once the interior is composited on top.
     private func vanBody(around opening: CGRect) -> some View {
         let bodyInset = layout.size.width * 0.03
         let bodyTop = layout.size.height * 0.01
         let bodyBottom = layout.size.height * 0.82
         let bodyRect = CGRect(x: bodyInset, y: bodyTop, width: layout.size.width - bodyInset * 2, height: bodyBottom - bodyTop)
+        let stripeHeight = max(6, bodyRect.height * 0.055)
+        let stripeY = bodyRect.minY + bodyRect.height * 0.62
 
         return ZStack {
             RoundedRectangle(cornerRadius: 10)
@@ -65,8 +95,13 @@ struct TruckExteriorView: View {
                 .frame(width: bodyRect.width, height: bodyRect.height)
                 .position(x: bodyRect.midX, y: bodyRect.midY)
 
+            Rectangle()
+                .fill(ArtPalette.orange)
+                .frame(width: bodyRect.width, height: stripeHeight)
+                .position(x: bodyRect.midX, y: stripeY)
+
             RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(Color.black.opacity(0.5), lineWidth: 1.5)
+                .strokeBorder(Color.black.opacity(0.45), lineWidth: 1.5)
                 .frame(width: bodyRect.width, height: bodyRect.height)
                 .position(x: bodyRect.midX, y: bodyRect.midY)
 
@@ -78,25 +113,27 @@ struct TruckExteriorView: View {
             // The rolled-up door drum tucked just above the opening.
             VStack(spacing: 2) {
                 ForEach(0..<3, id: \.self) { _ in
-                    Rectangle().fill(Color(white: 0.3))
+                    Rectangle().fill(ArtPalette.steelLight.opacity(0.85))
                 }
             }
             .frame(width: opening.width, height: 10)
-            .background(Color(white: 0.14))
+            .background(ArtPalette.steel)
             .position(x: opening.midX, y: opening.minY - 7)
         }
     }
 
     private var vanBodyGradient: LinearGradient {
-        LinearGradient(colors: [Color(white: 0.88), Color(white: 0.72)], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [ArtPalette.vanWhite, ArtPalette.vanShade], startPoint: .top, endPoint: .bottom)
     }
 
     /// Small amber marker lights along the roofline, standard on a box van.
     private func roofMarkerLights(around opening: CGRect) -> some View {
         HStack(spacing: layout.size.width * 0.06) {
             ForEach(0..<3, id: \.self) { _ in
-                Circle().fill(Color.orange).frame(width: 7, height: 7)
-                    .shadow(color: .orange.opacity(0.8), radius: 3)
+                Circle()
+                    .fill(ArtPalette.orange)
+                    .frame(width: 7, height: 7)
+                    .overlay(Circle().fill(Color.white.opacity(0.4)).frame(width: 3, height: 3))
             }
         }
         .position(x: opening.midX, y: layout.size.height * 0.025)
@@ -113,15 +150,15 @@ struct TruckExteriorView: View {
     }
 
     private var taillight: some View {
-        RoundedRectangle(cornerRadius: 3)
-            .fill(LinearGradient(colors: [Color.red, Color.red.opacity(0.6)], startPoint: .top, endPoint: .bottom))
-            .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.black.opacity(0.5), lineWidth: 1))
+        RoundedRectangle(cornerRadius: 2)
+            .fill(LinearGradient(colors: [Color.red, Color.red.opacity(0.55)], startPoint: .top, endPoint: .bottom))
+            .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.black.opacity(0.5), lineWidth: 1))
     }
 
     // MARK: Open doors
 
     /// One barn door, swung fully open so it reads edge-on in the margin beside the opening —
-    /// a sliver of its white outer skin, the window recess, and the lower wood-toned panel.
+    /// white panels, a window, and the same orange band as the body.
     private func openDoor(mirrored: Bool, opening: CGRect) -> some View {
         let margin = opening.minX
         let doorWidth = margin * 0.55
@@ -130,29 +167,28 @@ struct TruckExteriorView: View {
 
         return VStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 3)
-                .fill(Color(white: 0.9))
+                .fill(ArtPalette.vanWhite)
                 .frame(width: doorWidth, height: doorHeight * 0.22)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color(white: 0.75))
+                        .fill(ArtPalette.sky.opacity(0.85))
                         .padding(4)
                 )
             Rectangle()
-                .fill(Color(white: 0.85))
-                .frame(width: doorWidth, height: doorHeight * 0.48)
-            RoundedRectangle(cornerRadius: 2)
-                .fill(doorPanelGradient)
-                .frame(width: doorWidth * 0.82, height: doorHeight * 0.26)
+                .fill(ArtPalette.vanWhite)
+                .frame(width: doorWidth, height: doorHeight * 0.34)
+            Rectangle()
+                .fill(ArtPalette.orange)
+                .frame(width: doorWidth, height: doorHeight * 0.07)
+            Rectangle()
+                .fill(ArtPalette.vanShade)
+                .frame(width: doorWidth, height: doorHeight * 0.33)
         }
         .overlay(
             RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(Color.black.opacity(0.4), lineWidth: 1)
         )
         .position(x: x, y: opening.minY + doorHeight / 2 + opening.height * 0.02)
-    }
-
-    private var doorPanelGradient: LinearGradient {
-        LinearGradient(colors: [Color(red: 0.42, green: 0.30, blue: 0.18), Color(red: 0.32, green: 0.22, blue: 0.13)], startPoint: .top, endPoint: .bottom)
     }
 
     // MARK: Sill, bumper, wheels
@@ -170,6 +206,11 @@ struct TruckExteriorView: View {
                 .frame(width: opening.width + layout.size.width * 0.02, height: height)
                 .position(x: opening.midX, y: sillTop + height / 2)
 
+            Rectangle()
+                .fill(ArtPalette.orange)
+                .frame(width: opening.width * 0.7, height: 3)
+                .position(x: opening.midX, y: sillTop + 4)
+
             HStack(spacing: opening.width * 0.5) {
                 wheel
                 wheel
@@ -179,14 +220,27 @@ struct TruckExteriorView: View {
     }
 
     private var wheel: some View {
-        Circle()
-            .fill(Color.black.opacity(0.9))
-            .frame(width: 22, height: 22)
-            .overlay(Circle().fill(Color(white: 0.4)).frame(width: 9, height: 9))
+        ZStack {
+            Circle().fill(Color.black.opacity(0.92))
+            Circle().fill(Color(white: 0.28)).frame(width: 12, height: 12)
+            Circle().fill(ArtPalette.vanShade).frame(width: 5, height: 5)
+        }
+        .frame(width: 22, height: 22)
     }
 
     private var sillGradient: LinearGradient {
-        LinearGradient(colors: [Color(white: 0.45), Color(white: 0.18)], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [ArtPalette.vanShade, Color(white: 0.16)], startPoint: .top, endPoint: .bottom)
+    }
+}
+
+private struct SkyTriangle: Shape {
+    func path(in r: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: r.midX, y: r.minY))
+        path.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        path.addLine(to: CGPoint(x: r.minX, y: r.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 
