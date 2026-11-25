@@ -10,12 +10,12 @@ nonisolated enum LoaderPose: Equatable {
     case tossing(towardLeft: Bool, high: Bool)
 }
 
-/// The low-poly warehouse loader from the app icon and home poster — faceted cap, mustache,
-/// brown uniform — built from flat polygons so he can crouch, reach, hold a box, and toss it
-/// toward a shelf. Joint positions, pose angles, and the figure's frame match the previous rig;
-/// only the shapes inside those slots changed. Every measurement is relative to `height`, so the
-/// whole figure scales as a single unit. Purely decorative: never hit-tests, so taps still reach
-/// the floor and belt behind him.
+/// The loader: a muscular Black man in a fitted work tee and a low cap, drawn with the same
+/// flat facets as the rest of the dock. He stays calm — steady eyes, a small closed smile, no
+/// sweat or panic — including while a combo is fevered. Joint positions, pose angles, and the
+/// figure's frame are unchanged; only the shapes inside those slots, and a slower breathe,
+/// differ. Every measurement is relative to `height`. Purely decorative: never hit-tests, so
+/// taps still reach the floor and belt behind him.
 struct LoaderFigure: View {
     var pose: LoaderPose
     var isFevered: Bool = false
@@ -33,10 +33,10 @@ struct LoaderFigure: View {
             upperBody(rig: rig)
         }
         .frame(width: 70 * s, height: height)
-        .offset(y: breathe ? -1.5 * s : 1.5 * s)
-        .animation(.spring(duration: 0.35), value: pose)
+        .offset(y: breathe ? -0.5 * s : 0.5 * s)
+        .animation(.spring(duration: 0.48, bounce: 0.08), value: pose)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
                 breathe = true
             }
         }
@@ -63,39 +63,31 @@ struct LoaderFigure: View {
 
     private func head(rig: PoseRig) -> some View {
         ZStack {
-            ear.offset(x: -15 * s, y: 1 * s)
-            ear.scaleEffect(x: -1).offset(x: 15 * s, y: 1 * s)
+            ear.offset(x: -15 * s, y: 2 * s)
+            ear.scaleEffect(x: -1).offset(x: 15 * s, y: 2 * s)
 
             FacetHead().fill(ArtPalette.skin).frame(width: 32 * s, height: 32 * s)
             FaceShade().fill(ArtPalette.skinShade).frame(width: 32 * s, height: 32 * s)
             ForeheadPlane().fill(ArtPalette.skinLight).frame(width: 32 * s, height: 32 * s)
+            FadeHair().fill(ArtPalette.hair).frame(width: 32 * s, height: 32 * s)
 
-            HStack(spacing: 10 * s) {
+            HStack(spacing: 9 * s) {
                 eye
                 eye
             }
-            .offset(y: -2 * s)
+            .offset(y: -0.5 * s)
 
             HStack(spacing: 8 * s) {
-                Brow().fill(ArtPalette.hair).frame(width: 9 * s, height: 3.5 * s)
-                Brow().fill(ArtPalette.hair).frame(width: 9 * s, height: 3.5 * s).scaleEffect(x: -1)
+                Brow().fill(ArtPalette.hair).frame(width: 8 * s, height: 2.2 * s)
+                Brow().fill(ArtPalette.hair).frame(width: 8 * s, height: 2.2 * s).scaleEffect(x: -1)
             }
-            .offset(y: -8 * s)
+            .offset(y: -4.4 * s)
 
-            FacetNose().fill(ArtPalette.skinShade).frame(width: 5 * s, height: 4 * s).offset(y: 3 * s)
+            FacetNose().fill(ArtPalette.skinShade).frame(width: 4 * s, height: 3.5 * s).offset(y: 3 * s)
 
             mouth
-            Mustache().fill(ArtPalette.hair).frame(width: 20 * s, height: 6 * s).offset(y: 7 * s)
 
             cap
-
-            shards
-
-            if isFevered {
-                sparks
-            } else {
-                sweatDrops
-            }
         }
         .rotationEffect(.degrees(rig.headTilt))
         .frame(width: 32 * s, height: 32 * s)
@@ -105,78 +97,34 @@ struct LoaderFigure: View {
         EarShape().fill(ArtPalette.skinShade).frame(width: 6 * s, height: 9 * s)
     }
 
+    /// Half-lidded and level. The same eyes in fever — the streak shows on the shoulders, not
+    /// on his face. A strike is the screen flash; he doesn't flinch.
     private var eye: some View {
         ZStack {
-            EyeWhite().fill(.white).frame(width: 7 * s, height: 5 * s)
-            Rectangle().fill(.black).frame(width: 2.6 * s, height: 2.6 * s).offset(y: 0.4 * s)
+            EyeWhite().fill(.white).frame(width: 7 * s, height: 3.6 * s)
+            Rectangle().fill(.black).frame(width: 2.1 * s, height: 2.1 * s).offset(y: 0.5 * s)
+            Lid().fill(ArtPalette.skin).frame(width: 8 * s, height: 2.2 * s).offset(y: -1.15 * s)
         }
     }
 
-    /// The icon's open, stressed mouth. Fever swaps in a wider grin so the streak still reads,
-    /// without changing the head's slot.
+    /// A short closed smile. Fever doesn't open it or show teeth.
     private var mouth: some View {
-        ZStack {
-            if isFevered {
-                Smile()
-                    .stroke(ArtPalette.hair, style: StrokeStyle(lineWidth: 2.2 * s, lineCap: .round))
-                    .frame(width: 14 * s, height: 6 * s)
-                Rectangle().fill(.white).frame(width: 9 * s, height: 2.4 * s).offset(y: 1.2 * s)
-            } else {
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(ArtPalette.hair)
-                    .frame(width: 12 * s, height: 5.5 * s)
-                Rectangle().fill(.white).frame(width: 8.5 * s, height: 2.1 * s).offset(y: -0.9 * s)
-            }
-        }
-        .offset(y: 10.5 * s)
+        Smile()
+            .stroke(ArtPalette.hair, style: StrokeStyle(lineWidth: 1.3 * s, lineCap: .round))
+            .frame(width: 7 * s, height: 2.6 * s)
+            .offset(y: 9 * s)
     }
 
+    /// A low fitted cap over the fade. Shorter than the old crown so it sits on the head
+    /// instead of stacking above it.
     private var cap: some View {
-        ZStack(alignment: .top) {
-            CapBrim().fill(ArtPalette.capShade).frame(width: 36 * s, height: 7 * s).offset(y: -8 * s)
-            CapBrimHighlight().fill(ArtPalette.capLight.opacity(0.85)).frame(width: 36 * s, height: 7 * s).offset(y: -8 * s)
-
-            CapCrown().fill(ArtPalette.cap).frame(width: 30 * s, height: 16 * s).offset(y: -18 * s)
-            CapCrownLight().fill(ArtPalette.capLight).frame(width: 30 * s, height: 16 * s).offset(y: -18 * s)
-            CapCrownShade().fill(ArtPalette.capShade).frame(width: 30 * s, height: 16 * s).offset(y: -18 * s)
-
-            Diamond().fill(ArtPalette.capLight).frame(width: 4 * s, height: 4 * s).offset(y: -25 * s)
-        }
-    }
-
-    /// White diamond flecks from the poster, parked around the cap. They ride the head tilt
-    /// with him and don't animate on their own.
-    private var shards: some View {
         ZStack {
-            shard.offset(x: -18 * s, y: -20 * s)
-            shard.scaleEffect(0.7).offset(x: 16 * s, y: -22 * s)
-            shard.scaleEffect(0.55).offset(x: -8 * s, y: -28 * s)
-            shard.scaleEffect(0.8).offset(x: 8 * s, y: -16 * s)
+            CapBrim().fill(ArtPalette.capShade).frame(width: 30 * s, height: 4 * s).offset(y: -7.5 * s)
+            CapBrimHighlight().fill(ArtPalette.capLight.opacity(0.8)).frame(width: 30 * s, height: 4 * s).offset(y: -7.5 * s)
+            CapCrown().fill(ArtPalette.cap).frame(width: 26 * s, height: 9 * s).offset(y: -12 * s)
+            CapCrownLight().fill(ArtPalette.capLight).frame(width: 26 * s, height: 9 * s).offset(y: -12 * s)
+            CapCrownShade().fill(ArtPalette.capShade).frame(width: 26 * s, height: 9 * s).offset(y: -12 * s)
         }
-    }
-
-    private var shard: some View {
-        Diamond().fill(Color.white.opacity(0.92)).frame(width: 5 * s, height: 5 * s)
-    }
-
-    private var sweatDrops: some View {
-        ZStack {
-            SweatDrop().fill(Color.white.opacity(0.92)).frame(width: 4.5 * s, height: 7 * s).offset(x: -14 * s, y: -2 * s)
-            SweatDrop().fill(Color.white.opacity(0.85)).frame(width: 3.5 * s, height: 6 * s).offset(x: 15 * s, y: -6 * s)
-        }
-    }
-
-    private var sparks: some View {
-        ZStack {
-            spark.rotationEffect(.degrees(-30)).offset(x: -20 * s, y: -16 * s)
-            spark.rotationEffect(.degrees(30)).offset(x: 20 * s, y: -16 * s)
-            spark.offset(y: -26 * s)
-        }
-        .opacity(breathe ? 1 : 0.55)
-    }
-
-    private var spark: some View {
-        Diamond().fill(ArtPalette.orange).frame(width: 4 * s, height: 11 * s)
     }
 
     // MARK: Torso
@@ -184,21 +132,10 @@ struct LoaderFigure: View {
     private var torso: some View {
         ZStack {
             TorsoShape().fill(ArtPalette.shirt).frame(width: 52 * s, height: 50 * s)
-            TorsoHighlight().fill(ArtPalette.shirtLight).frame(width: 52 * s, height: 50 * s)
-            TorsoShade().fill(ArtPalette.shirtShade).frame(width: 52 * s, height: 50 * s)
+            PecLight().fill(ArtPalette.shirtLight).frame(width: 52 * s, height: 50 * s)
+            PecShade().fill(ArtPalette.shirtShade).frame(width: 52 * s, height: 50 * s)
 
-            Rectangle()
-                .fill(ArtPalette.shirtShade)
-                .frame(width: max(1, 1.4 * s), height: 26 * s)
-                .offset(y: 6 * s)
-
-            Collar().fill(ArtPalette.collar).frame(width: 16 * s, height: 12 * s).offset(y: -16 * s)
-
-            VStack(spacing: 6 * s) {
-                Rectangle().fill(ArtPalette.shirtShade).frame(width: 3.2 * s, height: 3.2 * s)
-                Rectangle().fill(ArtPalette.shirtShade).frame(width: 3.2 * s, height: 3.2 * s)
-            }
-            .offset(y: 4 * s)
+            Collar().fill(ArtPalette.collar).frame(width: 12 * s, height: 6 * s).offset(y: -19 * s)
         }
         .offset(y: 6 * s)
     }
@@ -212,13 +149,10 @@ struct LoaderFigure: View {
         let shoulder = mirrored ? -angles.shoulder : angles.shoulder
         let elbow = mirrored ? -angles.elbow : angles.elbow
         return VStack(spacing: -2 * s) {
-            ShoulderPad()
-                .fill(ArtPalette.shirtLight)
-                .frame(width: 20 * s, height: 10 * s)
-                .scaleEffect(x: mirrored ? -1 : 1)
-            Limb(topScale: 1, bottomScale: 0.78).fill(ArtPalette.shirt).frame(width: 15 * s, height: 28 * s)
+            shoulderPad.scaleEffect(x: mirrored ? -1 : 1)
+            upperArm
             VStack(spacing: 0) {
-                Limb(topScale: 0.92, bottomScale: 0.7).fill(ArtPalette.shirtShade).frame(width: 13 * s, height: 24 * s)
+                forearm
                 hand(mirrored: mirrored)
             }
             .rotationEffect(.degrees(elbow), anchor: .top)
@@ -226,15 +160,42 @@ struct LoaderFigure: View {
         .rotationEffect(.degrees(shoulder), anchor: .top)
     }
 
+    /// Same 20×10 slot. Fever adds a thin orange edge on the pad — composed, not sparks.
+    private var shoulderPad: some View {
+        ShoulderPad()
+            .fill(ArtPalette.shirtLight)
+            .overlay {
+                if isFevered {
+                    ShoulderPad().stroke(ArtPalette.orange, lineWidth: max(1, 1.2 * s))
+                }
+            }
+            .frame(width: 20 * s, height: 10 * s)
+    }
+
+    /// Same 15×28 slot: a short sleeve over a faceted bicep.
+    private var upperArm: some View {
+        ZStack(alignment: .top) {
+            Bicep().fill(ArtPalette.skin)
+            BicepHighlight().fill(ArtPalette.skinLight)
+            Sleeve().fill(ArtPalette.shirt).frame(width: 15 * s, height: 9 * s)
+            Sleeve().fill(ArtPalette.shirtShade).frame(width: 15 * s, height: 2.2 * s).offset(y: 7 * s)
+        }
+        .frame(width: 15 * s, height: 28 * s)
+    }
+
+    /// Same 13×24 slot, skin rather than a sleeve, with one highlight plane.
+    private var forearm: some View {
+        ZStack {
+            Limb(topScale: 0.95, bottomScale: 0.7).fill(ArtPalette.skin)
+            Limb(topScale: 0.38, bottomScale: 0.26).fill(ArtPalette.skinLight).offset(x: 1.5 * s)
+        }
+        .frame(width: 13 * s, height: 24 * s)
+    }
+
     private func hand(mirrored: Bool) -> some View {
         ZStack {
             HandShape().fill(ArtPalette.skin)
             HandShape().stroke(ArtPalette.skinLight, lineWidth: max(0.8, 1 * s))
-            // The poster's bright knuckle edge.
-            Rectangle()
-                .fill(Color.white.opacity(0.75))
-                .frame(width: 9 * s, height: max(1, 1.3 * s))
-                .offset(y: 1 * s)
         }
         .frame(width: 15 * s, height: 15 * s)
         .scaleEffect(x: mirrored ? -1 : 1)
@@ -386,13 +347,44 @@ private struct EyeWhite: Shape {
     }
 }
 
+/// Nearly level. A worried angle reads as strain; this one sits flat over the eye.
 private struct Brow: Shape {
     func path(in r: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: r.minX, y: r.height * 0.75))
+        path.move(to: CGPoint(x: r.minX, y: r.height * 0.45))
+        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.28))
+        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.62))
+        path.addLine(to: CGPoint(x: r.minX, y: r.height * 0.82))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The upper lid, sitting across the top of the eye white.
+private struct Lid: Shape {
+    func path(in r: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: r.minX, y: r.height * 0.35))
         path.addLine(to: CGPoint(x: r.maxX, y: r.minY))
-        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.45))
+        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.7))
         path.addLine(to: CGPoint(x: r.minX, y: r.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Close crop: hair along the crown and temples, forehead left clear.
+private struct FadeHair: Shape {
+    func path(in r: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: r.width * 0.14, y: r.height * 0.30))
+        path.addLine(to: CGPoint(x: r.width * 0.08, y: r.height * 0.14))
+        path.addLine(to: CGPoint(x: r.width * 0.24, y: r.height * 0.02))
+        path.addLine(to: CGPoint(x: r.width * 0.76, y: r.height * 0.02))
+        path.addLine(to: CGPoint(x: r.width * 0.92, y: r.height * 0.14))
+        path.addLine(to: CGPoint(x: r.width * 0.86, y: r.height * 0.30))
+        path.addLine(to: CGPoint(x: r.width * 0.70, y: r.height * 0.18))
+        path.addLine(to: CGPoint(x: r.width * 0.30, y: r.height * 0.18))
         path.closeSubpath()
         return path
     }
@@ -404,20 +396,6 @@ private struct FacetNose: Shape {
         path.move(to: CGPoint(x: r.midX, y: r.minY))
         path.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
         path.addLine(to: CGPoint(x: r.minX, y: r.height * 0.8))
-        path.closeSubpath()
-        return path
-    }
-}
-
-private struct Mustache: Shape {
-    func path(in r: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: r.midX, y: r.height * 0.28))
-        path.addLine(to: CGPoint(x: r.minX, y: r.height * 0.05))
-        path.addLine(to: CGPoint(x: r.width * 0.06, y: r.height * 0.78))
-        path.addLine(to: CGPoint(x: r.midX, y: r.height * 0.48))
-        path.addLine(to: CGPoint(x: r.width * 0.94, y: r.height * 0.78))
-        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.05))
         path.closeSubpath()
         return path
     }
@@ -486,66 +464,40 @@ private struct CapBrimHighlight: Shape {
     }
 }
 
-private struct Diamond: Shape {
-    func path(in r: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: r.midX, y: r.minY))
-        path.addLine(to: CGPoint(x: r.maxX, y: r.midY))
-        path.addLine(to: CGPoint(x: r.midX, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.minX, y: r.midY))
-        path.closeSubpath()
-        return path
-    }
-}
-
-private struct SweatDrop: Shape {
-    func path(in r: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: r.midX, y: r.minY))
-        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.62))
-        path.addLine(to: CGPoint(x: r.midX, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.minX, y: r.height * 0.62))
-        path.closeSubpath()
-        return path
-    }
-}
-
-/// A trapezoid with peaked shoulders, wider across the chest than the waist.
+/// Broad through the chest, only a little narrower at the waist. Drawn inside the same 52×50 slot.
 private struct TorsoShape: Shape {
     func path(in r: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: r.width * 0.06, y: r.height * 0.18))
-        path.addLine(to: CGPoint(x: r.width * 0.20, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.80, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.94, y: r.height * 0.18))
-        path.addLine(to: CGPoint(x: r.width * 0.84, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.width * 0.16, y: r.maxY))
+        path.move(to: CGPoint(x: r.width * 0.02, y: r.height * 0.18))
+        path.addLine(to: CGPoint(x: r.width * 0.12, y: r.minY))
+        path.addLine(to: CGPoint(x: r.width * 0.88, y: r.minY))
+        path.addLine(to: CGPoint(x: r.width * 0.98, y: r.height * 0.18))
+        path.addLine(to: CGPoint(x: r.width * 0.90, y: r.maxY))
+        path.addLine(to: CGPoint(x: r.width * 0.10, y: r.maxY))
         path.closeSubpath()
         return path
     }
 }
 
-private struct TorsoHighlight: Shape {
+private struct PecLight: Shape {
     func path(in r: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: r.width * 0.20, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.48, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.42, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.width * 0.16, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.width * 0.06, y: r.height * 0.18))
+        path.move(to: CGPoint(x: r.width * 0.16, y: r.height * 0.18))
+        path.addLine(to: CGPoint(x: r.width * 0.46, y: r.height * 0.16))
+        path.addLine(to: CGPoint(x: r.width * 0.44, y: r.height * 0.50))
+        path.addLine(to: CGPoint(x: r.width * 0.18, y: r.height * 0.54))
         path.closeSubpath()
         return path
     }
 }
 
-private struct TorsoShade: Shape {
+private struct PecShade: Shape {
     func path(in r: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: r.width * 0.58, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.80, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.94, y: r.height * 0.18))
-        path.addLine(to: CGPoint(x: r.width * 0.84, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.width * 0.52, y: r.maxY))
+        path.move(to: CGPoint(x: r.width * 0.54, y: r.height * 0.16))
+        path.addLine(to: CGPoint(x: r.width * 0.84, y: r.height * 0.18))
+        path.addLine(to: CGPoint(x: r.width * 0.82, y: r.height * 0.54))
+        path.addLine(to: CGPoint(x: r.width * 0.56, y: r.height * 0.50))
         path.closeSubpath()
         return path
     }
@@ -565,11 +517,52 @@ private struct Collar: Shape {
 private struct ShoulderPad: Shape {
     func path(in r: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: r.width * 0.12, y: r.maxY))
-        path.addLine(to: CGPoint(x: r.width * 0.04, y: r.height * 0.35))
-        path.addLine(to: CGPoint(x: r.width * 0.38, y: r.minY))
-        path.addLine(to: CGPoint(x: r.width * 0.96, y: r.height * 0.18))
-        path.addLine(to: CGPoint(x: r.width * 0.88, y: r.maxY))
+        path.move(to: CGPoint(x: r.width * 0.04, y: r.maxY))
+        path.addLine(to: CGPoint(x: r.minX, y: r.height * 0.22))
+        path.addLine(to: CGPoint(x: r.width * 0.32, y: r.minY))
+        path.addLine(to: CGPoint(x: r.maxX, y: r.height * 0.08))
+        path.addLine(to: CGPoint(x: r.width * 0.96, y: r.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Wider through the middle of the upper-arm slot.
+private struct Bicep: Shape {
+    func path(in r: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: r.width * 0.22, y: r.minY))
+        path.addLine(to: CGPoint(x: r.width * 0.78, y: r.minY))
+        path.addLine(to: CGPoint(x: r.width * 0.98, y: r.height * 0.46))
+        path.addLine(to: CGPoint(x: r.width * 0.80, y: r.maxY))
+        path.addLine(to: CGPoint(x: r.width * 0.20, y: r.maxY))
+        path.addLine(to: CGPoint(x: r.width * 0.04, y: r.height * 0.46))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct BicepHighlight: Shape {
+    func path(in r: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: r.width * 0.50, y: r.height * 0.22))
+        path.addLine(to: CGPoint(x: r.width * 0.76, y: r.height * 0.16))
+        path.addLine(to: CGPoint(x: r.width * 0.94, y: r.height * 0.46))
+        path.addLine(to: CGPoint(x: r.width * 0.74, y: r.height * 0.74))
+        path.addLine(to: CGPoint(x: r.width * 0.52, y: r.height * 0.58))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The short sleeve, drawn in a short frame at the top of the upper-arm slot.
+private struct Sleeve: Shape {
+    func path(in r: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: r.width * 0.06, y: r.minY))
+        path.addLine(to: CGPoint(x: r.width * 0.94, y: r.minY))
+        path.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        path.addLine(to: CGPoint(x: r.minX, y: r.maxY))
         path.closeSubpath()
         return path
     }

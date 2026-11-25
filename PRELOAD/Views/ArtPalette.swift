@@ -17,9 +17,11 @@ enum ArtPalette {
     static let tape = Color(red: 0.93, green: 0.84, blue: 0.64)
     static let airTape = Color(red: 0.55, green: 0.78, blue: 0.90)
 
-    static let skin = Color(red: 0.478, green: 0.298, blue: 0.184) // #7A4C2F
-    static let skinLight = Color(red: 0.608, green: 0.455, blue: 0.357) // #9B745B
-    static let skinShade = Color(red: 0.322, green: 0.196, blue: 0.122)
+    /// Deep brown facet planes for the loader. The highlight stays in the same family so the
+    /// planes read as form, not a lighter complexion.
+    static let skin = Color(red: 0.247, green: 0.145, blue: 0.094) // #3F2618
+    static let skinLight = Color(red: 0.365, green: 0.227, blue: 0.153) // #5D3A27
+    static let skinShade = Color(red: 0.133, green: 0.075, blue: 0.051) // #22130D
     static let cap = Color(red: 0.353, green: 0.247, blue: 0.145) // #5A3F25
     static let capLight = Color(red: 0.510, green: 0.420, blue: 0.341) // #826B57
     static let capShade = Color(red: 0.227, green: 0.153, blue: 0.082)
